@@ -1,0 +1,31 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: vaultbackup
+spec:
+  schedule: "55 06,18 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          volumes:
+          - name: vaultserviceaccount
+            secret:
+              secretName: vaultserviceaccount
+          containers:
+          - name: vaultbackup 
+            image: asia.gcr.io/company/vaultbackup:0.0.7
+            env:
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /config/vaultsa/credentials.json
+            - name: CLOUDSDK_CORE_PROJECT
+              value: {{ .Values.configs.project_id }}
+            - name: "NAMESPACE"
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            volumeMounts:
+            - name: vaultserviceaccount
+              mountPath: /config/vaultsa/
+              readOnly: true
+          restartPolicy: OnFailure 

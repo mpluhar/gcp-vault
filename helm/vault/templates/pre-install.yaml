@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: certs
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    # This is what defines this resource as a hook. Without this line, the
+    # job is considered part of the release.
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": pre-install, hook-succeeded, hook-failed
+
+# below doesnt work because of https://github.com/kubernetes/helm/issues/3165
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: certs
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    # This is what defines this resource as a hook. Without this line, the
+    # job is considered part of the release.
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "2"
+    "helm.sh/hook-delete-policy": pre-install, hook-succeeded, hook-failed
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: certs
+    namespace: {{ .Release.Namespace }}
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: vaultcerts
+  annotations:
+    # This is what defines this resource as a hook. Without this line, the
+    # job is considered part of the release.
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "2"
+    "helm.sh/hook-delete-policy": pre-install, hook-succeeded
+spec:
+  template:
+    metadata:
+      name: vaultcerts
+    spec:
+      serviceAccountName: certs
+      containers:
+      - name: vaultcerts
+        image: "{{ .Values.prehook.repository }}/{{ .Values.prehook.prefix }}:{{ .Values.prehook.tag }}"
+        imagePullPolicy: Always
+        env:
+          - name: "NAMESPACE"
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+
+          - name: "VAULT_TLS"
+            value: "vaultssl"
+      restartPolicy: Never
+      imagePullSecrets:
+      - name: registrykey
