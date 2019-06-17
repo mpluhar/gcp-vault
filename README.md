@@ -1,4 +1,4 @@
-# gcp Vault
+# Vault for GKE
 
 Set up of a GKE cluster, all prerequisites and Hashicorp Vault.
 
