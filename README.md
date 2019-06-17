@@ -1,6 +1,6 @@
 # gcp Vault
 
-Set up the prerequisites and installs Vault on K8s in GCP. 
+Set up of a GKE cluster, all prerequisites and Hashicorp Vault.
 
 ## Getting Started
 
